@@ -71,6 +71,7 @@ class playerprofile:
 
             return embed
 
+    # Manual Just in Case Functions
     def AddPoints(self, discordID, amount):
         message = '<@!' + str(discordID) + '> has been added ' + str(amount) + 'points'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
@@ -98,5 +99,13 @@ class playerprofile:
 
     def ReduceLosses(self, discordID, amount):
         message = '<@!' + str(discordID) + '> has been reduced ' + str(amount) + 'losses'
+        embed = discord.Embed(title="", description=message, color=0xda0b0b)
+        return embed
+
+    # End of The Manual Functions for Backup
+
+    # Get Top 
+    def GetTopFive(self):
+        message = 'The Top 5 Winners is: '
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed

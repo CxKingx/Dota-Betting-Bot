@@ -1,11 +1,13 @@
 import os
 import discord
+
 # import datetime,timedelta
 from datetime import datetime, timedelta
 # import pytz
 # import time
 from discord import reaction
 from discord.ext import commands, tasks
+from discord.ext.commands import MissingPermissions
 from playerprofile import playerprofile
 
 my_secret = os.environ['DISCORD_TOKEN']
@@ -60,6 +62,12 @@ async def addPoints(ctx, amount, user: discord.Member = None):
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+@addPoints.error
+async def addPoints_error(ctx, error):
+    print('encounter eror')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to add Points <:kizunaai:683869090204614658>.")
 
 @bot.command(name='reducePoints', help='Reduce Points to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
@@ -204,7 +212,16 @@ async def endbet(ctx):
 
 @bot.event
 async def on_message(message):
-    print('mesg')
+    username = str(message.author).split('#')[0]
+    user_message = str(message.content)
+
+    split_message = user_message.split()
+    channel = str(message.channel.name)
+    channelID = str(message.channel.id)
+    # channel_nsfw = message.channel.is_nsfw()
+    print(f'{username}: {user_message} ({channel}) (ID: {channelID})')
+
+    #Dont Delete This
     await bot.process_commands(message)
 
 
