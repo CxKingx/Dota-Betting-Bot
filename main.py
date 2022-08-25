@@ -53,9 +53,10 @@ async def profile(ctx, user: discord.Member = None):
 @bot.command(name='addPoints', help='Add Points to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def addPoints(ctx, amount, user: discord.Member = None):
+    print('addPoints')
     if user:
         if amount:
-            embedVar = dbObject.AddPoints(user.id,int(amount))
+            embedVar = dbObject.AddPoints(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
@@ -63,79 +64,135 @@ async def addPoints(ctx, amount, user: discord.Member = None):
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
+
 @addPoints.error
 async def addPoints_error(ctx, error):
-    print('encounter eror')
+    print('addPoints_error')
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("You don't have permission to add Points <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
+
 
 @bot.command(name='reducePoints', help='Reduce Points to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def reducePoints(ctx, amount, user: discord.Member = None):
+    print('reducePoints')
     if user:
         if amount:
-            embedVar = dbObject.ReducePoints(user.id,int(amount))
+            embedVar = dbObject.ReducePoints(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+
+@reducePoints.error
+async def reducePoints_error(ctx, error):
+    print('reducePoints_error ')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to Reduce Points <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
 
 
 @bot.command(name='addWins', help='Add Wins to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def addWins(ctx, amount, user: discord.Member = None):
+    print('addWins')
     if user:
         if amount:
-            embedVar = dbObject.AddWins(user.id,int(amount))
+            embedVar = dbObject.AddWins(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+
+@addWins.error
+async def addWins_error(ctx, error):
+    print('addWins_error ')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to add Wins <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
 
 
 @bot.command(name='reduceWins', help='Reduce Wins to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def reduceWins(ctx, amount, user: discord.Member = None):
+    print('reduceWins')
     if user:
         if amount:
-            embedVar = dbObject.ReduceWins(user.id,int(amount))
+            embedVar = dbObject.ReduceWins(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+
+@reduceWins.error
+async def reduceWins_error(ctx, error):
+    print('reduceWins_error ')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to reduce Wins <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
+
 
 @bot.command(name='addLosses', help='Add Losses to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def addLosses(ctx, amount, user: discord.Member = None):
+    print('addLosses')
     if user:
         if amount:
-            embedVar = dbObject.AddLosses(user.id,int(amount))
+            embedVar = dbObject.AddLosses(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+
+@addLosses.error
+async def addLosses_error(ctx, error):
+    print('addLosses_error ')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to add Losses <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
 
 
 @bot.command(name='reduceLosses', help='Reduce Losses to a certain user')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 async def reduceLosses(ctx, amount, user: discord.Member = None):
+    print('reduceLosses')
     if user:
         if amount:
-            embedVar = dbObject.ReduceLosses(user.id,int(amount))
+            embedVar = dbObject.ReduceLosses(user.id, int(amount))
             await ctx.send(embed=embedVar)
         else:
             await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
 
     else:  # not mention get self
         await ctx.send(embed='Failed to add points cuz wrong syntax addPoints xamount @User')
+
+
+@reduceLosses.error
+async def reduceLosses_error(ctx, error):
+    print('reduceLosses_error')
+    if isinstance(error, commands.MissingAnyRole):
+        await ctx.send("You don't have permission to reduce Losses <:kizunaai:683869090204614658>.")
+    else:
+        await ctx.send("something went wrong")
+
 
 # Inputs
 @bot.command(name='bet', help='Bet in a ongoing game , Default bet is 20 points')
@@ -221,7 +278,7 @@ async def on_message(message):
     # channel_nsfw = message.channel.is_nsfw()
     print(f'{username}: {user_message} ({channel}) (ID: {channelID})')
 
-    #Dont Delete This
+    # Dont Delete This
     await bot.process_commands(message)
 
 

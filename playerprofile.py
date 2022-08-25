@@ -17,6 +17,15 @@ class playerprofile:
         con.commit()
         con.close()
 
+        con = sqlite3.connect('ActivityHistory.db')
+        cur = con.cursor()
+        cur.execute(
+            '''CREATE TABLE IF NOT EXISTS ActivityHistory (id integer PRIMARY KEY AUTOINCREMENT , DiscordID , Points , Wins , Lose)''')
+        con.commit()
+        con.close()
+
+
+
     def Register(self, discordID):
         con = sqlite3.connect('PlayerProfile.db')
         cur = con.cursor()
@@ -40,11 +49,7 @@ class playerprofile:
             return embed
 
     def CheckUserExists(self, discordID):
-        con = sqlite3.connect('PlayerProfile.db')
-        cur = con.cursor()
-        executeString = 'SELECT * FROM PlayerProfile WHERE DiscordID ="' + str(discordID) + '"'
-        cur.execute(executeString)
-        result = cur.fetchall()
+        result = self.OpenDBPlayerProfile(discordID)
         if (len(result) == 0):
             return False
         else:
@@ -52,11 +57,7 @@ class playerprofile:
 
     def GetPlayerProfile(self, discordID):
         print('GetPlayerProfile')
-        con = sqlite3.connect('PlayerProfile.db')
-        cur = con.cursor()
-        executeString = 'SELECT * FROM PlayerProfile WHERE DiscordID ="' + str(discordID) + '"'
-        cur.execute(executeString)
-        result = cur.fetchall()
+        result = self.OpenDBPlayerProfile(discordID)
         if (len(result) == 0):
             message = '<@!' + str(discordID) + '> has not Registered , you can use *signup to register'
             embed = discord.Embed(description=message, color=0xda0b0b)
@@ -71,33 +72,125 @@ class playerprofile:
 
             return embed
 
+    def OpenDBPlayerProfile(self, discordID):
+        print('OpenDB')
+        con = sqlite3.connect('PlayerProfile.db')
+        cur = con.cursor()
+        executeString = 'SELECT * FROM PlayerProfile WHERE DiscordID ="' + str(discordID) + '"'
+        cur.execute(executeString)
+        result = cur.fetchall()
+        con.close()
+        return result
+
+    def UpdateDBPlayerProfile(self, discordID, message):
+        print('UpdateDB')
+        con = sqlite3.connect('PlayerProfile.db')
+        cur = con.cursor()
+        executeString = 'SELECT * FROM PlayerProfile WHERE DiscordID ="' + str(discordID) + '"'
+        cur.execute(executeString)
+        result = cur.fetchall()
+        cur.execute(message)
+        con.commit()
+        con.close()
+        return
+
     # Manual Just in Case Functions
     def AddPoints(self, discordID, amount):
+        print('Adding Points')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+            addCounter = int(result[0][2]) + int(amount)
+            updatestring = "UPDATE PlayerProfile SET Points = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
         message = '<@!' + str(discordID) + '> has been added ' + str(amount) + 'points'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
 
     def ReducePoints(self, discordID, amount):
+        print('Reducing Points')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+            addCounter = int(result[0][2]) - int(amount)
+            updatestring = "UPDATE PlayerProfile SET Points = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
+
         message = '<@!' + str(discordID) + '> has been reduced ' + str(amount) + 'points'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
 
     def AddWins(self, discordID, amount):
+        print('Adding Wins')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+
+            addCounter = int(result[0][3]) + int(amount)
+            updatestring = "UPDATE PlayerProfile SET Wins = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
+
         message = '<@!' + str(discordID) + '> has been added ' + str(amount) + 'win'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
 
     def ReduceWins(self, discordID, amount):
+        print('Reducing Wins')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+            addCounter = int(result[0][3]) - int(amount)
+            updatestring = "UPDATE PlayerProfile SET Wins = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
         message = '<@!' + str(discordID) + '> has been reduced ' + str(amount) + 'win'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
 
     def AddLosses(self, discordID, amount):
+        print('Adding Losses')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+            addCounter = int(result[0][4]) + int(amount)
+            updatestring = "UPDATE PlayerProfile SET Losses = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
+
         message = '<@!' + str(discordID) + '> has been added ' + str(amount) + 'losses'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
 
     def ReduceLosses(self, discordID, amount):
+        print('Reduce Losses')
+        result = self.OpenDBPlayerProfile(discordID)
+        if len(result) == 0:
+            message = 'Something went Wrong'
+            embed = discord.Embed(description=message, color=0xda0b0b)
+            return embed
+        else:
+            addCounter = int(result[0][4]) - int(amount)
+            updatestring = "UPDATE PlayerProfile SET Losses = '" + str(addCounter) + "' WHERE DiscordID = '" + str(
+                discordID) + "'"
+            self.UpdateDBPlayerProfile(discordID, updatestring)
         message = '<@!' + str(discordID) + '> has been reduced ' + str(amount) + 'losses'
         embed = discord.Embed(title="", description=message, color=0xda0b0b)
         return embed
