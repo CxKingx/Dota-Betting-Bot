@@ -19,16 +19,13 @@ bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 dbObject = playerprofile()
 betObject = betmanager()
 
-# Make the Bet Objects
-# Class 1 the User Database Storage
 
-# Class 2 the Bet Functions
-# await ctx.channel.send('a')
 @bot.event
 async def on_ready():
     print('We have logged in as  {0.user}'.format(bot))
     # Load Relevant Database # User and Points
     # Activity Save File
+
 
 @bot.command(name='test', help='Register Your Name in the Database to be able to bet')
 async def test(ctx):
@@ -46,6 +43,7 @@ async def signup(ctx):
     embedVar = dbObject.Register(ctx.author.id)
     await ctx.send(embed=embedVar)
 
+
 @bot.command(name='deleteuser', help='Delete User')
 async def deleteuser(ctx, user: discord.Member = None):
     if user:
@@ -53,6 +51,7 @@ async def deleteuser(ctx, user: discord.Member = None):
         await ctx.send(embed=embedVar)
     else:  # not mention get self
         await ctx.send('No user to delete')
+
 
 @bot.command(name='profile', help='Look at your profile ')
 async def profile(ctx, user: discord.Member = None):
@@ -219,10 +218,10 @@ async def bet(ctx):
     msg_list = []
 
     def SideReply(m):
-        return m.channel == thischannel and m.author == Bet_author
+        return m.channel == thischannel and m.author == Bet_author and isinstance(m.content, str)
 
     def AmountReply(m):
-        return m.channel == thischannel and m.author == Bet_author
+        return m.channel == thischannel and m.author == Bet_author and isinstance(int(m.content), int)
 
     userexists = dbObject.CheckUserExists(ctx.author.id)
     if userexists:
@@ -277,8 +276,6 @@ async def bet(ctx):
         await ctx.send('No Account Registered , use *signup')
         return
 
-
-
     # Check if Bet is Online
     # Yes Continue
     # Check if User has Existed in the Database
@@ -295,6 +292,7 @@ async def bet(ctx):
     # print('No Bets are ongoing right now
     # No Display Error Message
 
+
 @bet.error
 async def bet_error(ctx, error):
     print('bet_error')
@@ -302,6 +300,8 @@ async def bet_error(ctx, error):
         await ctx.send("You don't have permission<:kizunaai:683869090204614658>.")
     else:
         await ctx.send("something went wrong")
+
+
 # Inputs
 @bot.command(name='startbet', help='Start Betting Session 1')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
@@ -348,14 +348,15 @@ async def startbet(ctx):
         await x.delete()
     print('done')
 
-    embedBet = betObject.StartBetSession(Radiant_msg.content,Dire_msg.content)
-    await ctx.send(embed = embedBet)
+    embedBet = betObject.StartBetSession(Radiant_msg.content, Dire_msg.content)
+    await ctx.send(embed=embedBet)
     # Setup Embed Message
     # Send Title to Bet Function Class
     # Let that function setup the things time limited to bet , setup the temp cache for ppl storage
     # Bet Status = True
     # Get Embed message from them
     # await ctx.send(embed = embed)
+
 
 # @startbet.error
 # async def startbet_error(ctx, error):

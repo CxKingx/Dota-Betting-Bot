@@ -22,6 +22,12 @@ class betmanager:
         LongStringSplit.remove(Title)
         return Title, LongStringSplit
 
+    def DireRadConvertor(self, RadiantSide, DireSide):
+        direlist = ['dire', 'd']
+        radiantlist =['radiant','rad','r']
+
+        #if (any(x == RadiantSide.lower() for x in radiantlist)):
+
     def StartBetSession(self, RadiantSide, DireSide):
         self.BetExists = True
         embed = discord.Embed(title="Bet Session", color=0xff00ae)
