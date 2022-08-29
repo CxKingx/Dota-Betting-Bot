@@ -210,9 +210,6 @@ async def reduceLosses_error(ctx, error):
 # Inputs
 @bot.command(name='bet', help='Bet in a ongoing game , Default bet is 20 points')
 async def bet(ctx):
-    # amount = 2
-    # await ctx.send(str(amount))
-    # await ctx.send(str(-amount))
     thischannel = ctx.channel
     Bet_author = ctx.author
     msg_list = []
@@ -228,7 +225,7 @@ async def bet(ctx):
         CurrentMoney = dbObject.GetUserMoney(ctx.author.id)
 
         # Check Bet if Online
-        if betObject.GetBetExists():
+        if betObject.GetBetExists() and betObject.CheckUserinBet(ctx.author.id):
 
             BetQuestion = await ctx.send('Your funds is: ' + str(CurrentMoney) + '\nPlease Give Amount for Bet')
             msg_list.append(BetQuestion)
@@ -253,7 +250,8 @@ async def bet(ctx):
                 Side_msg = await bot.wait_for('message', timeout=30, check=SideReply)
                 if SideReply:
                     msg_list.append(Side_msg)
-                    if Side_msg.content.lower() == 'dire' or Side_msg.content.lower() == 'radiant':
+                    TranslatedMessage = betObject.DireRadConvertor(Side_msg.content.lower())
+                    if TranslatedMessage == 'dire' or TranslatedMessage == 'radiant':
                         BetProcessMsg = await ctx.send('Processing Bet (Not actually up yet)')
                         msg_list.append(BetProcessMsg)
                     else:
@@ -264,14 +262,22 @@ async def bet(ctx):
                 await ctx.send('too long, try again')
                 return
 
-            Title = str('You have betted **' + Amount_msg.content + '** for **' + str(Side_msg.content) + '** side')
+            Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
             await ctx.send(Title)
 
             for x in msg_list:
                 await x.delete()
             print('done')
+            betMsgObject = betObject.GetBetUserMessage()
+            embedVar = betObject.AddUser(ctx.author.id, TranslatedMessage, Amount_msg.content)
+            await betMsgObject.edit(embed=embedVar)
+
         else:
-            await ctx.send('No Bet Session is Ongoing')
+            if not betObject.GetBetExists():
+                await ctx.send('No Bet Session is Ongoing')
+            else:
+                await ctx.send('You have bet already in this match')
+
     else:
         await ctx.send('No Account Registered , use *signup')
         return
@@ -293,63 +299,71 @@ async def bet(ctx):
     # No Display Error Message
 
 
-@bet.error
-async def bet_error(ctx, error):
-    print('bet_error')
-    if isinstance(error, commands.MissingAnyRole):
-        await ctx.send("You don't have permission<:kizunaai:683869090204614658>.")
-    else:
-        await ctx.send("something went wrong")
-
+# @bet.error
+# async def bet_error(ctx, error):
+#     print('bet_error')
+#     if isinstance(error, commands.MissingAnyRole):
+#         await ctx.send("You don't have permission<:kizunaai:683869090204614658>.")
+#     else:
+#         await ctx.send("something went wrong")
+#
 
 # Inputs
 @bot.command(name='startbet', help='Start Betting Session 1')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 # async def startbet(ctx , radiant , dire ):
 async def startbet(ctx):
-    thischannel = ctx.channel
-    Bet_Starter = ctx.author
-    msg_list = []
-    msg_list.append(ctx.message)
+    if betObject.GetBetExists():
+        await ctx.send('A bet is in Session')
+    else:
 
-    # print(msg_list)
-    def radiant(m):
-        return m.channel == thischannel and m.author == Bet_Starter
+        thischannel = ctx.channel
+        Bet_Starter = ctx.author
+        msg_list = []
+        msg_list.append(ctx.message)
 
-    def dire(m):
-        return m.channel == thischannel and m.author == Bet_Starter
+        # print(msg_list)
+        def radiant(m):
+            return m.channel == thischannel and m.author == Bet_Starter
 
-    reply1 = await ctx.send('Please Specify Radiant Side')
-    msg_list.append(reply1)
-    try:
-        Radiant_msg = await bot.wait_for('message', timeout=30, check=radiant)
-        if Radiant_msg:
-            # await ctx.send(str(Radiant_msg.content))
-            msg_list.append(Radiant_msg)
-    except asyncio.TimeoutError:
-        await ctx.send('too long, try again')
-        return
+        def dire(m):
+            return m.channel == thischannel and m.author == Bet_Starter
 
-    reply2 = await ctx.send('Please Specify Dire Side')
-    msg_list.append(reply2)
-    try:
-        Dire_msg = await bot.wait_for('message', timeout=30, check=dire)
-        if Dire_msg:
-            # await ctx.send(str(Dire_msg.content))
-            msg_list.append(Dire_msg)
-    except asyncio.TimeoutError:
-        await ctx.send('too long, try again')
-        return
+        reply1 = await ctx.send('Please Specify Radiant Side')
+        msg_list.append(reply1)
+        try:
+            Radiant_msg = await bot.wait_for('message', timeout=30, check=radiant)
+            if Radiant_msg:
+                # await ctx.send(str(Radiant_msg.content))
+                msg_list.append(Radiant_msg)
+        except asyncio.TimeoutError:
+            await ctx.send('too long, try again')
+            return
 
-    Title = str('Radiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
-    await ctx.send(Title)
+        reply2 = await ctx.send('Please Specify Dire Side')
+        msg_list.append(reply2)
+        try:
+            Dire_msg = await bot.wait_for('message', timeout=30, check=dire)
+            if Dire_msg:
+                # await ctx.send(str(Dire_msg.content))
+                msg_list.append(Dire_msg)
+        except asyncio.TimeoutError:
+            await ctx.send('too long, try again')
+            return
 
-    for x in msg_list:
-        await x.delete()
-    print('done')
+        Title = str('Radiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
+        await ctx.send(Title)
 
-    embedBet = betObject.StartBetSession(Radiant_msg.content, Dire_msg.content)
-    await ctx.send(embed=embedBet)
+        for x in msg_list:
+            await x.delete()
+        print('done')
+
+        embedBet, embedBetters = betObject.StartBetSession(Radiant_msg.content, Dire_msg.content)
+        TitleBetMessage = await ctx.send(embed=embedBet)
+        betObject.SetTitleBetMessage(TitleBetMessage)
+        BettersMessage = await ctx.send(embed=embedBetters)
+        betObject.SetBetUserMessage(BettersMessage)
+
     # Setup Embed Message
     # Send Title to Bet Function Class
     # Let that function setup the things time limited to bet , setup the temp cache for ppl storage
