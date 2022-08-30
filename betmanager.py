@@ -12,6 +12,7 @@ class betmanager:
         self.RadiantBetters = []
         self.titleMessage = 0
         self.betUserMessage = 0
+        self.TotalPoints = 0
         self.CreateDatabases()
         # Each Player list (id , Dire/Radiang, AmountBet)
 
@@ -116,6 +117,22 @@ class betmanager:
     def GetBetUserMessage(self):
         return self.betUserMessage
 
+    def CountTotalPointsBetted(self, SessionID):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '"'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        if len(result) == 0:
+            print('No Value cuz no ppl Bet')
+        else:
+            TempTotalPoints = 0
+            for x in result:
+                TempTotalPoints = TempTotalPoints + int(x[4])
+
+            self.TotalPoints = TempTotalPoints
+        return
+
+    def GetTotalPointsBetted(self):
+        return self.TotalPoints
+
     def LoadBetters(self):
         print('Load Bet n Update')
         # Load Radiant and put in list
@@ -127,21 +144,24 @@ class betmanager:
 
         print(self.RadiantBetters)
         print(self.DireBetters)
-        RBetString = ''
-        DBetString = ''
+        RBetString = '-'
+        DBetString = '-'
         for x in self.RadiantBetters:
             # RBetString = str(RBetString) + ' ' + str(x[])
-            RBetString = RBetString + '<@!' + str(x[1]) + '>: ' + str(x[4]) + ' points\n'
+            RBetString = RBetString + '<@!' + str(x[1]) + '>: ' + str(x[4]) + ' points\n-'
             #print(' ' + str(x[0]) + ' ' + str(x[1]) + ' ' + str(x[2]) + ' ' + str(x[3]) + ' ' + str(x[4]))
         for x in self.DireBetters:
             # RBetString = str(RBetString) + ' ' + str(x[])
-            DBetString = DBetString + '<@!' + str(x[1]) + '>: ' + str(x[4]) + ' points\n'
+            DBetString = DBetString + '<@!' + str(x[1]) + '>: ' + str(x[4]) + ' points\n-'
             #print(' ' + str(x[0]) + ' ' + str(x[1]) + ' ' + str(x[2]) + ' ' + str(x[3]) + ' ' + str(x[4]))
         # Return
-
+        self.CountTotalPointsBetted(1)
         #print(RBetString)
         #print(DBetString)
-        bettersembed = discord.Embed(title="Betters ", color=0xff00ae)
+        #embedVar = discord.Embed(title="Current Q: " + str(len(self.ParticipantDict)) + '/' + str(self.QueLimit),
+                                 #description='Press the reaction to join ', color=0x00ff00)
+        descMsg = ''+str(self.TotalPoints)+' Points Total'
+        bettersembed = discord.Embed(title="Betters ",description=descMsg, color=0xff00ae)
         bettersembed.add_field(name="Radiant Betters", value=RBetString, inline=True)
         bettersembed.add_field(name='Dire Betters', value=DBetString, inline=True)
         #bettersembed.add_field(name="Dire Betters", value='\u200b', inline=True)
@@ -159,17 +179,7 @@ class betmanager:
         else:
             print('No add cuz exists')
 
-    def deleteUser(self, discordID, Side, AmountBet):
-        result = self.OpenDBOngoingBetters(discordID)
-        if (len(result) == 0):
-            message = 'nothing to delete'
-        else:
-            print('deleting')
-            updatestring = 'DELETE FROM PlayerProfile WHERE DiscordID = "' + str(discordID) + '"'
-            self.UpdateDBOngoingBetters(discordID, updatestring)
-            message = 'Deleted ID'
-        embed = discord.Embed(description=message, color=0xda0b0b)
-        return embed
+
 
     def AddDireBetters(self, discordID, Side, AmountBet):
         DataTuple = (discordID, Side, AmountBet)
