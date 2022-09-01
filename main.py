@@ -35,6 +35,36 @@ async def test(ctx):
     print(first_word)
     all_words.remove(all_words[0])
     print(all_words)
+    deez = await ctx.send(ctx.message.id)
+    await ctx.send(deez.id)
+    #betObject.TestUpdate()
+
+    #msg = await ctx.fetch_message(1014895020882526320)
+    #await msg.edit(content='buhbhe')
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    await ctx.send('pls gv content')
+
+    def SessionReply(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    try:
+        Amount_msg = await bot.wait_for('message', timeout=30, check=SessionReply)
+        await ctx.send(Amount_msg)
+        if Amount_msg:
+            await ctx.send('Valid Input')
+            try:
+                if isinstance(  int(Amount_msg.content), int):
+                    print('yes')
+                else:
+                    print('no')
+            except:
+                print('invalid input')
+
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
 
 
 @bot.command(name='signup', help='Register Your Name in the Database to be able to bet')
@@ -214,69 +244,90 @@ async def bet(ctx):
     Bet_author = ctx.author
     msg_list = []
 
+    def SessionReply(m):
+        return m.channel == thischannel and m.author == Bet_author
+
     def SideReply(m):
-        return m.channel == thischannel and m.author == Bet_author and isinstance(m.content, str)
+        return m.channel == thischannel and m.author == Bet_author
 
     def AmountReply(m):
-        return m.channel == thischannel and m.author == Bet_author and isinstance(int(m.content), int)
+
+        return m.channel == thischannel and m.author == Bet_author
 
     userexists = dbObject.CheckUserExists(ctx.author.id)
     if userexists:
         CurrentMoney = dbObject.GetUserMoney(ctx.author.id)
 
         # Check Bet if Online
-        if betObject.GetBetExists() and betObject.CheckUserinBet(ctx.author.id):
+        SessionAsk = await ctx.send('Please Specify Session Number')
+        msg_list.append(SessionAsk)
+        try:
+            Session_msg = await bot.wait_for('message', timeout=30, check=SessionReply)
+            if SessionAsk:
+                if betObject.CheckSessionExists(Session_msg.content):
+                    msg_list.append(Session_msg)
+                else:
+                    await ctx.send('No Bet Session Exists')
+                    return
+                # await ctx.send(str(Radiant_msg.content))
 
-            BetQuestion = await ctx.send('Your funds is: ' + str(CurrentMoney) + '\nPlease Give Amount for Bet')
-            msg_list.append(BetQuestion)
-            try:
-                Amount_msg = await bot.wait_for('message', timeout=30, check=AmountReply)
-                if AmountReply:
-                    msg_list.append(Amount_msg)
-                    if dbObject.CheckBetableStatus(ctx.author.id, int(Amount_msg.content)):
-                        AmountSufficientMsg = await ctx.send('Next Step')
-                        msg_list.append(AmountSufficientMsg)
-                    else:
-                        await ctx.send('Not enough points to bet')
-                        return
+        except asyncio.TimeoutError:
+            await ctx.send('too long, try again')
+            return
 
-            except asyncio.TimeoutError:
-                await ctx.send('too long, try again')
-                return
-
-            SideQuestion = await ctx.send('Please Pick a side Radiant/Dire')
-            msg_list.append(SideQuestion)
-            try:
-                Side_msg = await bot.wait_for('message', timeout=30, check=SideReply)
-                if SideReply:
-                    msg_list.append(Side_msg)
-                    TranslatedMessage = betObject.DireRadConvertor(Side_msg.content.lower())
-                    if TranslatedMessage == 'dire' or TranslatedMessage == 'radiant':
-                        BetProcessMsg = await ctx.send('Processing Bet (Not actually up yet)')
-                        msg_list.append(BetProcessMsg)
-                    else:
-                        await ctx.send('Invalid choice, please choose \'radiant\' or \'dire\' ')
-                        return
-
-            except asyncio.TimeoutError:
-                await ctx.send('too long, try again')
-                return
-
-            Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
-            await ctx.send(Title)
-
-            for x in msg_list:
-                await x.delete()
-            print('done')
-            betMsgObject = betObject.GetBetUserMessage()
-            embedVar = betObject.AddUser(ctx.author.id, TranslatedMessage, Amount_msg.content)
-            await betMsgObject.edit(embed=embedVar)
-
-        else:
-            if not betObject.GetBetExists():
-                await ctx.send('No Bet Session is Ongoing')
+        BetQuestion = await ctx.send('Your funds is: ' + str(CurrentMoney) + '\nPlease Give Amount for Bet')
+        msg_list.append(BetQuestion)
+        try:
+            Amount_msg = await bot.wait_for('message', timeout=30, check=AmountReply)
+            if AmountReply:
+                try:
+                    if isinstance(int(Amount_msg.content), int):
+                        msg_list.append(Amount_msg)
+                        if dbObject.CheckBetableStatus(ctx.author.id, int(Amount_msg.content)):
+                            AmountSufficientMsg = await ctx.send('Next Step')
+                            msg_list.append(AmountSufficientMsg)
+                        else:
+                            await ctx.send('Not enough points to bet')
+                            return
+                except:
+                    await ctx.send('Invalid Input')
+                    return
             else:
-                await ctx.send('You have bet already in this match')
+                await ctx.send('Invalid Input')
+        except asyncio.TimeoutError:
+            await ctx.send('too long, try again')
+            return
+
+        SideQuestion = await ctx.send('Please Pick a side Radiant/Dire')
+        msg_list.append(SideQuestion)
+        TranslatedMessage = ''
+        try:
+            Side_msg = await bot.wait_for('message', timeout=30, check=SideReply)
+            if SideReply:
+                msg_list.append(Side_msg)
+                TranslatedMessage = betObject.DireRadConvertor(Side_msg.content.lower())
+                if TranslatedMessage == 'dire' or TranslatedMessage == 'radiant':
+                    BetProcessMsg = await ctx.send('Processing Bet (Not actually up yet)')
+                    msg_list.append(BetProcessMsg)
+                else:
+                    await ctx.send('Invalid choice, please choose \'radiant\' or \'dire\' ')
+                    return
+
+        except asyncio.TimeoutError:
+            await ctx.send('too long, try again')
+            return
+
+        for x in msg_list:
+            await x.delete()
+        print('done')
+        betMsgObjectID = betObject.GetBetUserMessage(Session_msg.content)
+        betMsgObject = await ctx.fetch_message(betMsgObjectID)
+
+        embedVar = betObject.AddUser(ctx.author.id, Session_msg.content, TranslatedMessage, Amount_msg.content)
+        await betMsgObject.edit(embed=embedVar)
+
+        Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
+        await ctx.send(Title)
 
     else:
         await ctx.send('No Account Registered , use *signup')
@@ -313,56 +364,77 @@ async def bet(ctx):
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
 # async def startbet(ctx , radiant , dire ):
 async def startbet(ctx):
-    if betObject.GetBetExists():
-        await ctx.send('A bet is in Session')
-    else:
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    msg_list = []
+    msg_list.append(ctx.message)
 
-        thischannel = ctx.channel
-        Bet_Starter = ctx.author
-        msg_list = []
-        msg_list.append(ctx.message)
+    # print(msg_list)
+    def radiant(m):
+        return m.channel == thischannel and m.author == Bet_Starter
 
-        # print(msg_list)
-        def radiant(m):
-            return m.channel == thischannel and m.author == Bet_Starter
+    def dire(m):
+        return m.channel == thischannel and m.author == Bet_Starter
 
-        def dire(m):
-            return m.channel == thischannel and m.author == Bet_Starter
+    def session(m):
+        return m.channel == thischannel and m.author == Bet_Starter
 
-        reply1 = await ctx.send('Please Specify Radiant Side')
-        msg_list.append(reply1)
-        try:
-            Radiant_msg = await bot.wait_for('message', timeout=30, check=radiant)
-            if Radiant_msg:
+    SessionAsk = await ctx.send('Please Specify Session Number')
+    msg_list.append(SessionAsk)
+    try:
+        Session_msg = await bot.wait_for('message', timeout=30, check=session)
+        if Session_msg:
+            if betObject.CheckSessionExists(Session_msg.content):
+                await ctx.send('Bet Session Exists')
+                return
+            else:
                 # await ctx.send(str(Radiant_msg.content))
-                msg_list.append(Radiant_msg)
-        except asyncio.TimeoutError:
-            await ctx.send('too long, try again')
-            return
+                msg_list.append(Session_msg)
+        else:
+            await ctx.send('Invalid Input')
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+    # await ctx.send('Please Specify Session ID
 
-        reply2 = await ctx.send('Please Specify Dire Side')
-        msg_list.append(reply2)
-        try:
-            Dire_msg = await bot.wait_for('message', timeout=30, check=dire)
-            if Dire_msg:
-                # await ctx.send(str(Dire_msg.content))
-                msg_list.append(Dire_msg)
-        except asyncio.TimeoutError:
-            await ctx.send('too long, try again')
-            return
+    reply1 = await ctx.send('Please Specify Radiant Side')
+    msg_list.append(reply1)
+    try:
+        Radiant_msg = await bot.wait_for('message', timeout=30, check=radiant)
+        if Radiant_msg:
+            # await ctx.send(str(Radiant_msg.content))
+            msg_list.append(Radiant_msg)
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
 
-        Title = str('Radiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
-        await ctx.send(Title)
+    reply2 = await ctx.send('Please Specify Dire Side')
+    msg_list.append(reply2)
+    try:
+        Dire_msg = await bot.wait_for('message', timeout=30, check=dire)
+        if Dire_msg:
+            # await ctx.send(str(Dire_msg.content))
+            msg_list.append(Dire_msg)
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
 
-        for x in msg_list:
-            await x.delete()
-        print('done')
+    Title = str('Session Number ' + str(
+        Session_msg.content) + '\nRadiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
+    await ctx.send(Title)
 
-        embedBet, embedBetters = betObject.StartBetSession(Radiant_msg.content, Dire_msg.content)
-        TitleBetMessage = await ctx.send(embed=embedBet)
-        betObject.SetTitleBetMessage(TitleBetMessage)
-        BettersMessage = await ctx.send(embed=embedBetters)
-        betObject.SetBetUserMessage(BettersMessage)
+    for x in msg_list:
+        await x.delete()
+    print('done')
+
+    embedBet, embedBetters = betObject.StartBetSession(Session_msg.content, Radiant_msg.content, Dire_msg.content)
+    TitleBetMessage = await ctx.send(embed=embedBet)
+    # betObject.SetTitleBetMessage(Session_msg, TitleBetMessage.id)
+    BettersMessage = await ctx.send(embed=embedBetters)
+    # betObject.SetBetUserMessage(Session_msg, BettersMessage.id)
+    betObject.InsertSessionTable(Session_msg.content, TitleBetMessage.id, BettersMessage.id)
+
+
 
     # Setup Embed Message
     # Send Title to Bet Function Class
