@@ -173,7 +173,8 @@ class playerprofile:
             self.UpdateDBPlayerProfile(discordID, updatestring)
             # Update History
             updateHistory = '''INSERT INTO ActivityHistory ( DiscordID, Points ,Wins,Lose) VALUES(?,?,?,?)'''
-            data_tuple = (str(discordID), str(-amount), '0', '0')
+            reducestring = '-'+str(amount)
+            data_tuple = (str(discordID), str(reducestring), '0', '0')
             self.UpdateHistory(discordID, updateHistory, data_tuple)
 
         message = '<@!' + str(discordID) + '> has been reduced ' + str(amount) + 'points'

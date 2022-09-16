@@ -25,6 +25,7 @@ async def on_ready():
     print('We have logged in as  {0.user}'.format(bot))
     # Load Relevant Database # User and Points
     # Activity Save File
+    CheckPeriodically.start()
 
 
 @bot.command(name='test', help='Register Your Name in the Database to be able to bet')
@@ -37,35 +38,27 @@ async def test(ctx):
     print(all_words)
     deez = await ctx.send(ctx.message.id)
     await ctx.send(deez.id)
-    #betObject.TestUpdate()
+    # betObject.TestUpdate()
 
-    #msg = await ctx.fetch_message(1014895020882526320)
-    #await msg.edit(content='buhbhe')
+    # msg = await ctx.fetch_message(1014895020882526320)
+    # await msg.edit(content='buhbhe')
     thischannel = ctx.channel
     Bet_Starter = ctx.author
-    await ctx.send('pls gv content')
-
-    def SessionReply(m):
-        return m.channel == thischannel and m.author == Bet_Starter
-
-    try:
-        Amount_msg = await bot.wait_for('message', timeout=30, check=SessionReply)
-        await ctx.send(Amount_msg)
-        if Amount_msg:
-            await ctx.send('Valid Input')
-            try:
-                if isinstance(  int(Amount_msg.content), int):
-                    print('yes')
-                else:
-                    print('no')
-            except:
-                print('invalid input')
-
-    except asyncio.TimeoutError:
-        await ctx.send('too long, try again')
-        return
+    # today = datetime.datetime.today()  # 22:20
+    # MaxTimeRemove = today + timedelta(minutes=30)  # 22:45
+    # await ctx.send(datetime.now())
+    guild = bot.get_guild(683840883699089433)
+    print(guild)
+    channel = guild.get_channel(847409872324657153)
+    print(channel)
+    message = await channel.fetch_message(1019946780739252326)
+    print(message)
+    embedVar = discord.Embed(title="Current Q:",
+                             description='Press the reaction to join ', color=0x00ff00)
+    await message.edit(embed=embedVar)
 
 
+# Guild = 683840883699089433 Channel 847409872324657153 msg at 1019936538760581172
 
 @bot.command(name='signup', help='Register Your Name in the Database to be able to bet')
 async def signup(ctx):
@@ -238,7 +231,7 @@ async def reduceLosses_error(ctx, error):
 
 
 # Inputs
-@bot.command(name='bet', help='Bet in a ongoing game , Default bet is 20 points')
+@bot.command(name='bet', help='Bet in a ongoing game')
 async def bet(ctx):
     thischannel = ctx.channel
     Bet_author = ctx.author
@@ -251,7 +244,6 @@ async def bet(ctx):
         return m.channel == thischannel and m.author == Bet_author
 
     def AmountReply(m):
-
         return m.channel == thischannel and m.author == Bet_author
 
     userexists = dbObject.CheckUserExists(ctx.author.id)
@@ -273,6 +265,14 @@ async def bet(ctx):
 
         except asyncio.TimeoutError:
             await ctx.send('too long, try again')
+            return
+
+        if betObject.CheckUserinBet(ctx.author.id, Session_msg.content):
+            await ctx.send('You Have Betted in this match')
+            return
+
+        if betObject.CheckSessionOpen(Session_msg.content):
+            await ctx.send('Session is not available / Closed')
             return
 
         BetQuestion = await ctx.send('Your funds is: ' + str(CurrentMoney) + '\nPlease Give Amount for Bet')
@@ -359,11 +359,61 @@ async def bet(ctx):
 #         await ctx.send("something went wrong")
 #
 
+@bot.command(name='cancelbet', help='Bet in a ongoing game , Default bet is 20 points')
+async def cancelbet(ctx):
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    msg_list = []
+    msg_list.append(ctx.message)
+
+    def session(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    SessionAsk = await ctx.send('Please Specify Session Number to remove your bet')
+    msg_list.append(SessionAsk)
+    try:
+        Session_msg = await bot.wait_for('message', timeout=30, check=session)
+        if Session_msg:
+            if betObject.CheckSessionExists(Session_msg.content):
+                msg_list.append(Session_msg)
+
+            else:
+                await ctx.send('Bet Session Does not Exists')
+                return
+
+        else:
+            await ctx.send('Invalid Input')
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
+    betMsgObjectID = betObject.GetBetUserMessage(Session_msg.content)
+    betMsgObject = await ctx.fetch_message(betMsgObjectID)
+
+    embedVar, Status = betObject.RemoveUser(ctx.author.id, Session_msg.content)
+    await betMsgObject.edit(embed=embedVar)
+    if Status:
+        await ctx.send('You Have been removed from bet')
+    else:
+        await ctx.send('You have not bet in this session')
+
+
+@tasks.loop(minutes=1)
+async def CheckPeriodically():
+    print('checkin')
+    embedlist = betObject.SessionTimerClose()
+    for x in embedlist:
+        guild = bot.get_guild(int(x[2]))
+        channel = guild.get_channel(int(x[3]))
+        message = await channel.fetch_message(int(x[0]))
+        await message.edit(embed=x[1])
+
+
 # Inputs
-@bot.command(name='startbet', help='Start Betting Session 1')
+@bot.command(name='startSession', help='Start Betting Session 1')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
-# async def startbet(ctx , radiant , dire ):
-async def startbet(ctx):
+# async def startSession(ctx , radiant , dire ):
+async def startSession(ctx):
     thischannel = ctx.channel
     Bet_Starter = ctx.author
     msg_list = []
@@ -431,17 +481,15 @@ async def startbet(ctx):
     TitleBetMessage = await ctx.send(embed=embedBet)
     # betObject.SetTitleBetMessage(Session_msg, TitleBetMessage.id)
     BettersMessage = await ctx.send(embed=embedBetters)
+
     # betObject.SetBetUserMessage(Session_msg, BettersMessage.id)
-    betObject.InsertSessionTable(Session_msg.content, TitleBetMessage.id, BettersMessage.id)
-
-
-
-    # Setup Embed Message
-    # Send Title to Bet Function Class
-    # Let that function setup the things time limited to bet , setup the temp cache for ppl storage
-    # Bet Status = True
-    # Get Embed message from them
-    # await ctx.send(embed = embed)
+    today = datetime.now()  # 22:20
+    MaxTimeRemove = today + timedelta(minutes=15)  # 22:45
+    # ctx.message.guild.id ctx.message.channel.id
+    betObject.InsertSessionTable(Session_msg.content, TitleBetMessage.id, BettersMessage.id, MaxTimeRemove,
+                                 ctx.message.guild.id, ctx.message.channel.id)
+    # UpdateStatusEmbed = betObject.LoadBetters(Session_msg.content)
+    # await BettersMessage.edit(embed=UpdateStatusEmbed)
 
 
 # @startbet.error
@@ -452,20 +500,102 @@ async def startbet(ctx):
 #     else:
 #         await ctx.send("something went wrong")
 
-@bot.command(name='cancelbet', help='cancel Betting Session 1')
+@bot.command(name='cancelSession', help='cancel Betting Session')
 @commands.has_any_role('MOD', 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
-async def cancelbet(ctx):
+async def cancelSession(ctx):
     # Delete Message
-    await ctx.channel.send('Cancelling Bet Session')
-    await ctx.channel.send('a')
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    msg_list = []
+    msg_list.append(ctx.message)
+
+    def session(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    SessionAsk = await ctx.send('Please Specify Session Number to End')
+    msg_list.append(SessionAsk)
+    try:
+        Session_msg = await bot.wait_for('message', timeout=30, check=session)
+        if Session_msg:
+            if betObject.CheckSessionExists(Session_msg.content):
+                msg_list.append(Session_msg)
+
+            else:
+                await ctx.send('Bet Session Does not Exists')
+                return
+
+        else:
+            await ctx.send('Invalid Input')
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
+    for x in msg_list:
+        await x.delete()
+
+    betObject.CancelBetSession(ctx.author.id, Session_msg.content)
+    await ctx.send('Player Funds have been refunded')
 
 
-@bot.command(name='endbet', help='end Betting Session 1')
+@bot.command(name='endSession', help='end Betting Session 1')
 @commands.has_any_role('MOD', 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
-async def endbet(ctx):
-    # Delete Message
-    await ctx.channel.send('Ending Bet Session')
-    await ctx.channel.send('a')
+async def endSession(ctx):
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    msg_list = []
+    msg_list.append(ctx.message)
+
+    def SideReply(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    def session(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    SessionAsk = await ctx.send('Please Specify Session Number to End')
+    msg_list.append(SessionAsk)
+    try:
+        Session_msg = await bot.wait_for('message', timeout=30, check=session)
+        if Session_msg:
+            if betObject.CheckSessionExists(Session_msg.content):
+                msg_list.append(Session_msg)
+
+            else:
+                await ctx.send('Bet Session Does not Exists')
+                return
+
+        else:
+            await ctx.send('Invalid Input')
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
+    SideQuestion = await ctx.send('Please Choose which side won Radiant/Dire')
+    msg_list.append(SideQuestion)
+    TranslatedMessage = ''
+    try:
+        Side_msg = await bot.wait_for('message', timeout=30, check=SideReply)
+        if SideReply:
+            msg_list.append(Side_msg)
+            TranslatedMessage = betObject.DireRadConvertor(Side_msg.content.lower())
+            if TranslatedMessage == 'dire' or TranslatedMessage == 'radiant':
+                BetProcessMsg = await ctx.send('Processing Bet')
+                msg_list.append(BetProcessMsg)
+            else:
+                await ctx.send('Invalid choice, please choose \'radiant\' or \'dire\' ')
+                return
+
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
+    for x in msg_list:
+        await x.delete()
+
+    await ctx.send('Ending Session ' + Session_msg.content + ' with ' + Side_msg.content + ' as winners')
+    embedVar = betObject.EndBetSession(Session_msg.content, Side_msg.content)
+    for x in embedVar:
+        await ctx.send(embed=x)
+    # await ctx.send(embed=embedVar)
 
 
 @bot.command(name='top', help='end Betting Session 1')

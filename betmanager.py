@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 import sqlite3
 from playerprofile import playerprofile
@@ -14,6 +16,7 @@ class betmanager:
         self.betUserMessage = 0
         self.TotalPoints = 0
         self.CreateDatabases()
+        self.dbObject = playerprofile()
         # Each Player list (id , Dire/Radiant, AmountBet)
 
     def CreateDatabases(self):
@@ -21,7 +24,7 @@ class betmanager:
         cur = con.cursor()
         cur.execute(
             '''CREATE TABLE IF NOT EXISTS SessionTable (id integer PRIMARY KEY AUTOINCREMENT , 
-            SessionID INT(50) , TitleMsgID, BetMsgID )''')
+            SessionID INT(50) , TitleMsgID, BetMsgID , TimeCreated , Status , GuildID , ChannelID)''')
         con.commit()
         con.close()
 
@@ -66,6 +69,13 @@ class betmanager:
         con.close()
         return
 
+    def UpdateSessionTable(self,message):
+        con = sqlite3.connect('OngoingBetters.db')
+        cur = con.cursor()
+        cur.execute(message)
+        con.commit()
+        con.close()
+
     def GetBetExists(self):
         return self.BetExists
 
@@ -105,7 +115,7 @@ class betmanager:
         DireDisplay = '[' + str(DireTeam) + ']\n' + ' '.join(DireComposition)
         # embed.add_field(name='\u200b', value='\u200b', inline=True)
         embed.add_field(name="Dire", value=DireDisplay, inline=True)
-
+        #embedVar = self.LoadBetters(SessionID)
         bettersembed = discord.Embed(title="Betters ", color=0xff00ae)
         bettersembed.add_field(name="Radiant Betters", value='\u200b', inline=True)
         bettersembed.add_field(name="Dire Betters", value='\u200b', inline=True)
@@ -140,7 +150,7 @@ class betmanager:
         con.close()
         return
 
-    def CheckSessionExists(self,SessionID):
+    def CheckSessionExists(self, SessionID):
         result = self.OpenSessionTable(SessionID)
         if len(result) == 0:
             return False
@@ -159,9 +169,9 @@ class betmanager:
         con.commit()
         con.close()
 
-    def InsertSessionTable(self, SessionID, TitleMsgID, BetMsgID):
-        updateHistory = '''INSERT INTO SessionTable ( SessionID ,TitleMsgID,BetMsgID) VALUES(?,?,?)'''
-        data_tuple = (SessionID, TitleMsgID, BetMsgID)
+    def InsertSessionTable(self, SessionID, TitleMsgID, BetMsgID,TimeCreated,GuildID , ChannelID):
+        updateHistory = '''INSERT INTO SessionTable ( SessionID ,TitleMsgID,BetMsgID,TimeCreated, Status, GuildID , ChannelID) VALUES(?,?,?,?,?,?,?)'''
+        data_tuple = (SessionID, TitleMsgID, BetMsgID,TimeCreated,'Open',GuildID,ChannelID)
         self.UpdateSessionTableTuple(updateHistory, data_tuple)
         return
 
@@ -175,7 +185,7 @@ class betmanager:
     def SetBetUserMessage(self, SessionID, message):
         self.betUserMessage = message
 
-    def GetBetUserMessage(self,SessionID):
+    def GetBetUserMessage(self, SessionID):
         executeString = 'SELECT * FROM SessionTable WHERE SessionID ="' + str(SessionID) + '"'
         result = self.CustomOpenDBOngoingBetters(executeString)
         if len(result) == 0:
@@ -183,23 +193,46 @@ class betmanager:
         else:
             return result[0][3]
 
+    def CountRadiantPoints(self, SessionID):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and Side="radiant"'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        TempTotalPoints = 0
+        if len(result) == 0:
+            TempTotalPoints = 1
+        else:
+
+            for x in result:
+                TempTotalPoints = TempTotalPoints + int(x[3])
+        return TempTotalPoints
+
+    def CountDirePoints(self, SessionID):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and Side="dire"'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        TempTotalPoints = 0
+        if len(result) == 0:
+            TempTotalPoints = 1
+        else:
+            for x in result:
+                TempTotalPoints = TempTotalPoints + int(x[3])
+        return TempTotalPoints
+
     def CountTotalPointsBetted(self, SessionID):
         executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '"'
         result = self.CustomOpenDBOngoingBetters(executeString)
+        TempTotalPoints = 0
         if len(result) == 0:
             print('No Value cuz no ppl Bet')
         else:
-            TempTotalPoints = 0
+
             for x in result:
                 TempTotalPoints = TempTotalPoints + int(x[3])
-
-            self.TotalPoints = TempTotalPoints
-        return
+        self.TotalPoints = TempTotalPoints
+        return TempTotalPoints
 
     def GetTotalPointsBetted(self):
         return self.TotalPoints
 
-    def LoadBetters(self,SessionID):
+    def LoadBetters(self, SessionID):
         print('Load Bet n Update')
         # Load Radiant and put in list
         RadexecuteString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and Side="radiant"'
@@ -222,19 +255,29 @@ class betmanager:
             # print(' ' + str(x[0]) + ' ' + str(x[1]) + ' ' + str(x[2]) + ' ' + str(x[3]) + ' ' + str(x[4]))
         # Return
         self.CountTotalPointsBetted(SessionID)
-        # print(RBetString)
-        # print(DBetString)
-        # embedVar = discord.Embed(title="Current Q: " + str(len(self.ParticipantDict)) + '/' + str(self.QueLimit),
-        # description='Press the reaction to join ', color=0x00ff00)
-        descMsg = '' + str(self.TotalPoints) + ' Points Total'
-        bettersembed = discord.Embed(title="Betters ", description=descMsg, color=0xff00ae)
+        RadiantTotalPoints = self.CountRadiantPoints(SessionID)
+        DireTotalPoints = self.CountDirePoints(SessionID)
+        RatioMsg = ''
+        if RadiantTotalPoints > DireTotalPoints:
+            RatioMsg = '' + str(round(float(RadiantTotalPoints / DireTotalPoints), 2)) + ' : ' + str(
+                round(float(DireTotalPoints / DireTotalPoints), 2))
+            #round(float(RadiantTotalPoints / DireTotalPoints), 2)
+        else:
+            RatioMsg = '' + str(round(float(DireTotalPoints / DireTotalPoints), 2)) + ' : ' + str(
+                round(float(DireTotalPoints / RadiantTotalPoints), 2))
+
+        descMsg = 'Radiant ' + str(RadiantTotalPoints) + ' Points and Dire ' + str(DireTotalPoints) + ' Points\n'+RatioMsg
+        ThisSession = self.OpenSessionTable(SessionID)
+        TitleMessage = "Betters " + "Session Status: " + ThisSession[0][5]
+        bettersembed = discord.Embed(title=TitleMessage, description=descMsg, color=0xff00ae)
         bettersembed.add_field(name="Radiant Betters", value=RBetString, inline=True)
         bettersembed.add_field(name='Dire Betters', value=DBetString, inline=True)
         # bettersembed.add_field(name="Dire Betters", value='\u200b', inline=True)
         return bettersembed
 
-    def AddUser(self, discordID,SessionID, Side, AmountBet):
-        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and DiscordID ="'+str(discordID)+'"'
+    def AddUser(self, discordID, SessionID, Side, AmountBet):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and DiscordID ="' + str(
+            discordID) + '"'
         result = self.CustomOpenDBOngoingBetters(executeString)
         if len(result) == 0:
             InsertMessage = '''INSERT INTO OngoingBetters ( DiscordID, SessionID ,Side,Amount) VALUES(?,?,?,?)'''
@@ -242,37 +285,84 @@ class betmanager:
             self.UpdateDBOngoingBetters(discordID, InsertMessage, data_tuple)
 
             embedVar = self.LoadBetters(SessionID)
+
+            # Uncomment this when ready
+            self.dbObject.ReducePoints(discordID, AmountBet)
             return embedVar
         else:
             print('No add cuz exists')
 
-    def AddDireBetters(self, discordID, Side, AmountBet):
-        DataTuple = (discordID, Side, AmountBet)
-        self.DireBetters.append(DataTuple)
-        print('Added to Dire List')
+    def RemoveUser(self, discordID, SessionID):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and DiscordID ="' + str(
+            discordID) + '"'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        if len(result) == 0:
+            embedVar = discord.Embed(title="You have not bet in this session", description='\u200b', color=0xff00ae)
+            updatestatus = False
+        else:
+            for user in result:
+                self.dbObject.AddPoints(user[1], user[3])
+            message = 'DELETE FROM OngoingBetters WHERE SessionID = "' + str(SessionID) + '" and DiscordID ="' + str(
+                discordID) + '"'
+            self.UpdateSessionTable(message)
+            embedVar = self.LoadBetters(SessionID)
+            updatestatus = True
 
-    def AddRadBetters(self, discordID, Side, AmountBet):
-        DataTuple = (discordID, Side, AmountBet)
-        self.RadiantBetters.append(DataTuple)
-        print('Added to Radiant List')
+        return embedVar, updatestatus
 
-    def UpdateBettedUsers(self):
-        print('Updating')
-        # self.betUserMessage
+    def CheckUserinBet(self, discordID,SessionID):
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and DiscordID ="' + str(
+            discordID) + '"'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        if len(result) == 0:
+            return False
+        else:
+            return True
 
-    def CheckUserinBet(self, discordID):
-        print('Finding if duplicate')
+    def SessionTimerClose(self):
+        today = datetime.datetime.today()  # 22:20
+        #print(today)
+        con = sqlite3.connect('OngoingBetters.db')
+        cur = con.cursor()
+        executeString = 'SELECT * FROM SessionTable '
+        cur.execute(executeString)
+        result = cur.fetchall()
+        con.close()
+        EmbedUpdate=[]
+        if len(result) == 0:
+            return
+        else:
+            for x in result:
+                if today>datetime.datetime.strptime(x[4], '%Y-%m-%d %H:%M:%S.%f'):
+                    print('found at Session ID '+str(x[1]))
+                    print('Guild = '+str(x[6])+' Channel '+str(x[7])+ ' msg at '+str(x[3]))
+                    UpdateString = "UPDATE SessionTable SET Status = 'Closed' WHERE SessionID = '" + str(x[1]) + "'"
+                    self.UpdateSessionTable(UpdateString)
+                    embedVar = self.LoadBetters(str(x[1]))
+                    betmsgID = x[3]
+                    datatuple = (betmsgID,embedVar,x[6],x[7])
+                    EmbedUpdate.append(datatuple)
+       # embedVar = self.LoadBetters(SessionID)
 
-        result = self.OpenDBOngoingBetters(discordID)
+        return EmbedUpdate
+
+
+    def CheckSessionOpen(self, SessionID):
+        result = self.OpenSessionTable(SessionID)
+        print(str(result[0][5]))
         if len(result) == 0:
             return True
         else:
-            return False
+            if result[0][5]=='Open':
+                return False
+            else:
+                return True
+
 
     def CleanDatabaseSession(self, SessionID):
         con = sqlite3.connect('OngoingBetters.db')
         cur = con.cursor()
-        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '"'
+        executeString = 'SELECT * FROM SessionTable WHERE SessionID ="' + str(SessionID) + '"'
         cur.execute(executeString)
         result = cur.fetchall()
         if len(result) == 0:
@@ -283,17 +373,87 @@ class betmanager:
             cur.execute(updatestring)
             con.commit()
 
+            updatestring = 'DELETE FROM SessionTable WHERE SessionID = "' + str(SessionID) + '"'
+            cur.execute(updatestring)
+            con.commit()
+
             message = 'Deleted Sessions from Database'
         con.close()
         print(message)
-
 
         # embed = discord.Embed(description=message, color=0xda0b0b)
         # return embed
         return
 
-    def EndBetSession(self):
-        print("Ending")
+    def WinManager(self, SessionID, Side):
+        #Get Side Winners
+        RadiantTotalPoints = self.CountRadiantPoints(SessionID)
+        DireTotalPoints = self.CountDirePoints(SessionID)
+        if Side =='dire':
+            WinRatio = round(float(RadiantTotalPoints / DireTotalPoints), 2)
+            executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
+                SessionID) + '" and Side="dire"'
+        else:
+            WinRatio = (round(float(DireTotalPoints / RadiantTotalPoints), 2))
+            executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
+                SessionID) + '" and Side="radiant"'
 
-    def CancelBetSession(self):
+        Winners = self.CustomOpenDBOngoingBetters(executeString)
+        print(Winners)
+        for x in Winners:
+            #Get Discord ID ,
+            TotalWin = int(x[3]) + int(round(float(int(x[3]) * WinRatio),0))
+            self.dbObject.AddPoints(x[1], TotalWin)
+        EachPageNumber = 6
+        embedList = []
+        print('Preparing Who Won List')
+        for x in range(0, len(Winners), EachPageNumber):
+            print('x ' + str(x))
+            titleMsg = 'Session \"'+SessionID+'\" Winners'
+            embed = discord.Embed(title=titleMsg, color=0xda0b0b)
+            for y in range(0, EachPageNumber):
+                try:
+                    # print('y ' + str(y))
+                    # print('xy ' + str(x + y))
+                    print(Winners[x + y])
+
+                    message = '<@!' + str(Winners[x + y][1]) + '> won ' + str(
+                        int(round(float(int(Winners[x+y][3]) * WinRatio), 0))) + 'points '
+
+                    print(message)
+                    embed.add_field(value=message, name='\u200b', inline=False)
+                except:
+                    print('error')
+                #
+            embedList.append(embed)
+            # print('loops: '+ embedlist[x]+' '+ embedlist[x+1]+ ' '+embedlist[x+2])
+            # print(embedlist[x])
+        print('adding points to winner ')
+        print (embedList)
+        return embedList
+
+
+    def EndBetSession(self, SessionID, Side):
+        message = "Ending " + SessionID + ' Winner is ' + Side
+        WinEmbed = discord.Embed(title="Winner ", description=message, color=0xff00ae)
+        embedList =self.WinManager(SessionID,Side)
+        #self.CleanDatabaseSession(SessionID)
+        return embedList
+
+    def CancelBetSession(self, discordID, SessionID):
         print('Cancelling n refunding')
+        message = "Bet " + SessionID + " is Cancelled "
+        executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '"'
+
+        # CancelEmbed = discord.Embed(title="Winner ", description=message, color=0xff00ae)
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        if len(result) == 0:
+            message = 'nothing to delete'
+        else:
+            for user in result:
+                # print(user[1])
+                # print(user[3])
+                self.dbObject.AddPoints(user[1], user[3])
+
+        self.CleanDatabaseSession(SessionID)
+        return
