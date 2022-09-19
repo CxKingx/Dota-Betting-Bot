@@ -627,7 +627,7 @@ async def endSession(ctx):
 
 @bot.command(name='activeSession', help='end Betting Session 1')
 async def activeSession(ctx):
-    embedVar = d
+    embedVar = 0
 
 
 @bot.command(name='top', help='end Betting Session 1')
