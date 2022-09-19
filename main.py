@@ -320,14 +320,23 @@ async def bet(ctx):
         for x in msg_list:
             await x.delete()
         print('done')
+
         betMsgObjectID = betObject.GetBetUserMessage(Session_msg.content)
-        betMsgObject = await ctx.fetch_message(betMsgObjectID)
+        # betMsgObject = await ctx.fetch_message(betMsgObjectID)
+        if betMsgObjectID == 0:
+            await ctx.send('0 Result')
+        else:
 
-        embedVar = betObject.AddUser(ctx.author.id, Session_msg.content, TranslatedMessage, Amount_msg.content)
-        await betMsgObject.edit(embed=embedVar)
+            guild = bot.get_guild(int(betMsgObjectID[6]))
+            channel = guild.get_channel(int(betMsgObjectID[7]))
+            betMsgObject = await channel.fetch_message(int(betMsgObjectID[3]))
+            # await message.edit(embed=betMsgObjectID[1])
 
-        Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
-        await ctx.send(Title)
+            embedVar = betObject.AddUser(ctx.author.id, Session_msg.content, TranslatedMessage, Amount_msg.content)
+            await betMsgObject.edit(embed=embedVar)
+
+            Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
+            await ctx.send(Title)
 
     else:
         await ctx.send('No Account Registered , use *signup')
@@ -387,8 +396,15 @@ async def cancelbet(ctx):
         await ctx.send('too long, try again')
         return
 
+    if betObject.CheckSessionOpen(Session_msg.content):
+        await ctx.send('Session is not available / Closed')
+        return
+
     betMsgObjectID = betObject.GetBetUserMessage(Session_msg.content)
-    betMsgObject = await ctx.fetch_message(betMsgObjectID)
+    #betMsgObject = await ctx.fetch_message(betMsgObjectID)
+    guild = bot.get_guild(int(betMsgObjectID[6]))
+    channel = guild.get_channel(int(betMsgObjectID[7]))
+    betMsgObject = await channel.fetch_message(int(betMsgObjectID[3]))
 
     embedVar, Status = betObject.RemoveUser(ctx.author.id, Session_msg.content)
     await betMsgObject.edit(embed=embedVar)
@@ -402,11 +418,14 @@ async def cancelbet(ctx):
 async def CheckPeriodically():
     print('checkin')
     embedlist = betObject.SessionTimerClose()
-    for x in embedlist:
-        guild = bot.get_guild(int(x[2]))
-        channel = guild.get_channel(int(x[3]))
-        message = await channel.fetch_message(int(x[0]))
-        await message.edit(embed=x[1])
+    if len(embedlist) == 0:
+        return
+    else:
+        for x in embedlist:
+            guild = bot.get_guild(int(x[2]))
+            channel = guild.get_channel(int(x[3]))
+            message = await channel.fetch_message(int(x[0]))
+            await message.edit(embed=x[1])
 
 
 # Inputs
@@ -447,7 +466,7 @@ async def startSession(ctx):
         return
     # await ctx.send('Please Specify Session ID
 
-    reply1 = await ctx.send('Please Specify Radiant Side')
+    reply1 = await ctx.send('Please Specify Radiant Side. Format : TeamName hero hero hero hero hero')
     msg_list.append(reply1)
     try:
         Radiant_msg = await bot.wait_for('message', timeout=30, check=radiant)
@@ -458,7 +477,7 @@ async def startSession(ctx):
         await ctx.send('too long, try again')
         return
 
-    reply2 = await ctx.send('Please Specify Dire Side')
+    reply2 = await ctx.send('Please Specify Dire Side. Format : TeamName hero hero hero hero hero')
     msg_list.append(reply2)
     try:
         Dire_msg = await bot.wait_for('message', timeout=30, check=dire)
@@ -534,7 +553,9 @@ async def cancelSession(ctx):
         await x.delete()
 
     betObject.CancelBetSession(ctx.author.id, Session_msg.content)
-    await ctx.send('Player Funds have been refunded')
+    message = "Bet " + Session_msg.content + " is Cancelled "
+    CancelEmbed = discord.Embed(title=message, description='Player Funds have been refunded', color=0xff00ae)
+    await ctx.send(embed=CancelEmbed)
 
 
 @bot.command(name='endSession', help='end Betting Session 1')
@@ -591,11 +612,22 @@ async def endSession(ctx):
     for x in msg_list:
         await x.delete()
 
-    await ctx.send('Ending Session ' + Session_msg.content + ' with ' + Side_msg.content + ' as winners')
+    WinProcessMsg = 'Ending Session ' + Session_msg.content + ' with ' + TranslatedMessage + ' as winners'
+    WinEmbed = discord.Embed(title=WinProcessMsg, description='\u200b', color=0xff00ae)
+    await ctx.send(embed=WinEmbed)
+
     embedVar = betObject.EndBetSession(Session_msg.content, Side_msg.content)
-    for x in embedVar:
-        await ctx.send(embed=x)
+    if len(embedVar) == 0:
+        await ctx.send('No Winners')
+    elif len(embedVar) > 0:
+        for x in embedVar:
+            await ctx.send(embed=x)
+
     # await ctx.send(embed=embedVar)
+
+@bot.command(name='activeSession', help='end Betting Session 1')
+async def activeSession(ctx):
+    embedVar = d
 
 
 @bot.command(name='top', help='end Betting Session 1')
