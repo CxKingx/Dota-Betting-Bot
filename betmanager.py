@@ -456,3 +456,35 @@ class betmanager:
 
         self.CleanDatabaseSession(SessionID)
         return
+
+    def GetOngoingBetSession(self):
+        EachPageNumber = 6
+        title="Active Bets"
+        print("Getting all Bet Session")
+        executeString = 'SELECT * FROM OngoingBetters'
+        result = self.CustomOpenDBOngoingBetters(executeString)
+        embedList = []
+        if len(result) == 0:
+            message = 'nothing to delete'
+        else:
+            for x in range(0, len(result), EachPageNumber):
+                print('x ' + str(x))
+                embed = discord.Embed(title=title, color=0xda0b0b)
+                for y in range(0, EachPageNumber):
+                    try:
+                        # print('y ' + str(y))
+                        # print('xy ' + str(x + y))
+                        print(result[x + y])
+                        message = '<@!' + str(result[x + y][1]) + '>:\n  ***' + str(
+                            result[x + y][2]) + '*** points, ' + str(result[x + y][3]) + 'W ' + str(
+                            result[x + y][4]) + 'L'
+                        embed.add_field(value=message, name='\u200b', inline=False)
+                    except:
+                        print('error')
+                    #
+                embedList.append(embed)
+                # print('loops: '+ embedlist[x]+' '+ embedlist[x+1]+ ' '+embedlist[x+2])
+                # print(embedlist[x])
+            return embedList
+
+

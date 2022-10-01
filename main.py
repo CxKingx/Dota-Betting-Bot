@@ -401,7 +401,7 @@ async def cancelbet(ctx):
         return
 
     betMsgObjectID = betObject.GetBetUserMessage(Session_msg.content)
-    #betMsgObject = await ctx.fetch_message(betMsgObjectID)
+    # betMsgObject = await ctx.fetch_message(betMsgObjectID)
     guild = bot.get_guild(int(betMsgObjectID[6]))
     channel = guild.get_channel(int(betMsgObjectID[7]))
     betMsgObject = await channel.fetch_message(int(betMsgObjectID[3]))
@@ -616,7 +616,7 @@ async def endSession(ctx):
     WinEmbed = discord.Embed(title=WinProcessMsg, description='\u200b', color=0xff00ae)
     await ctx.send(embed=WinEmbed)
 
-    embedVar = betObject.EndBetSession(Session_msg.content, Side_msg.content)
+    embedVar = betObject.EndBetSession(Session_msg.content, TranslatedMessage)
     if len(embedVar) == 0:
         await ctx.send('No Winners')
     elif len(embedVar) > 0:
@@ -625,9 +625,11 @@ async def endSession(ctx):
 
     # await ctx.send(embed=embedVar)
 
+
 @bot.command(name='activeSession', help='end Betting Session 1')
 async def activeSession(ctx):
     embedVar = 0
+
 
 
 @bot.command(name='top', help='end Betting Session 1')
