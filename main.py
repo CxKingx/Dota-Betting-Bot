@@ -677,8 +677,13 @@ async def endSession(ctx):
 @bot.command(name='activeSession', help='end Betting Session 1')
 async def activeSession(ctx):
     embedVar = betObject.GetOngoingBetSession()
-    for x in embedVar:
-        await ctx.send(embed=x)
+    if len(embedVar) == 0:
+        await ctx.send('No Session')
+    elif len(embedVar) > 0:
+        for x in embedVar:
+            await ctx.send(embed=x)
+
+
 
 
 
