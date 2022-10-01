@@ -30,6 +30,7 @@ async def on_ready():
 
 @bot.command(name='test', help='Register Your Name in the Database to be able to bet')
 async def test(ctx):
+    await ctx.send(ctx.message.author.name)
     mylist = "Alliance TA Tide Dazzle Centa Jug"
     all_words = mylist.split()
     first_word = all_words[0]
@@ -334,8 +335,8 @@ async def bet(ctx):
 
             embedVar = betObject.AddUser(ctx.author.id, Session_msg.content, TranslatedMessage, Amount_msg.content)
             await betMsgObject.edit(embed=embedVar)
-
-            Title = str('You have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
+# ctx.message.author.name
+            Title = str(''+ctx.message.author.name+' have betted **' + Amount_msg.content + '** for **' + str(TranslatedMessage) + '** side')
             await ctx.send(Title)
 
     else:
@@ -428,6 +429,53 @@ async def CheckPeriodically():
             await message.edit(embed=x[1])
 
 
+@bot.command(name='closeSession', help='Start Betting Session 1')
+@commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
+async def closeSession(ctx):
+    print("Closing Session")
+    thischannel = ctx.channel
+    Bet_Starter = ctx.author
+    msg_list = []
+    msg_list.append(ctx.message)
+
+    def session(m):
+        return m.channel == thischannel and m.author == Bet_Starter
+
+    SessionAsk = await ctx.send('Please Specify Session Number to End')
+    msg_list.append(SessionAsk)
+    try:
+        Session_msg = await bot.wait_for('message', timeout=30, check=session)
+        if Session_msg:
+            if betObject.CheckSessionExists(Session_msg.content):
+                msg_list.append(Session_msg)
+
+            else:
+                await ctx.send('Bet Session Does not Exists')
+                return
+
+        else:
+            await ctx.send('Invalid Input')
+    except asyncio.TimeoutError:
+        await ctx.send('too long, try again')
+        return
+
+    for x in msg_list:
+        await x.delete()
+    #
+    embedlist = betObject.CloseBetSession(Session_msg.content)
+    #
+    if len(embedlist) == 0:
+        return
+    else:
+        for x in embedlist:
+            guild = bot.get_guild(int(x[2]))
+            channel = guild.get_channel(int(x[3]))
+            message = await channel.fetch_message(int(x[0]))
+            await message.edit(embed=x[1])
+            message = "Bet " + Session_msg.content + " is Closed "
+            CancelEmbed = discord.Embed(title=message, description='You can no longer bet', color=0xff00ae)
+            await ctx.send(embed=CancelEmbed)
+
 # Inputs
 @bot.command(name='startSession', help='Start Betting Session 1')
 @commands.has_any_role("MOD", 'mod', 'Moderators', 'Admin', 'Goblin king', 'Goblin giants')
@@ -503,7 +551,7 @@ async def startSession(ctx):
 
     # betObject.SetBetUserMessage(Session_msg, BettersMessage.id)
     today = datetime.now()  # 22:20
-    MaxTimeRemove = today + timedelta(minutes=15)  # 22:45
+    MaxTimeRemove = today + timedelta(minutes=8)  # 22:45
     # ctx.message.guild.id ctx.message.channel.id
     betObject.InsertSessionTable(Session_msg.content, TitleBetMessage.id, BettersMessage.id, MaxTimeRemove,
                                  ctx.message.guild.id, ctx.message.channel.id)

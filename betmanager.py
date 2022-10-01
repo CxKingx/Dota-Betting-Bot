@@ -457,6 +457,35 @@ class betmanager:
         self.CleanDatabaseSession(SessionID)
         return
 
+    def CloseBetSession(self,SessionID):
+        print('Close Bet')
+        today = datetime.datetime.today()  # 22:20
+        # print(today)
+        con = sqlite3.connect('OngoingBetters.db')
+        cur = con.cursor()
+        executeString = 'SELECT * FROM SessionTable WHERE SessionID ="' + str(SessionID) + '"'
+        cur.execute(executeString)
+        result = cur.fetchall()
+        con.close()
+        EmbedUpdate = []
+        if len(result) == 0:
+            return EmbedUpdate
+        else:
+            for x in result:
+                if today > datetime.datetime.strptime(x[4], '%Y-%m-%d %H:%M:%S.%f'):
+                    print('found at Session ID ' + str(x[1]))
+                    print('Guild = ' + str(x[6]) + ' Channel ' + str(x[7]) + ' msg at ' + str(x[3]))
+                    UpdateString = "UPDATE SessionTable SET Status = 'Closed' WHERE SessionID = '" + str(x[1]) + "'"
+                    self.UpdateSessionTable(UpdateString)
+                    embedVar = self.LoadBetters(str(x[1]))
+                    betmsgID = x[3]
+                    datatuple = (betmsgID, embedVar, x[6], x[7])
+                    EmbedUpdate.append(datatuple)
+        # embedVar = self.LoadBetters(SessionID)
+
+        return EmbedUpdate
+
+
     def GetOngoingBetSession(self):
         EachPageNumber = 6
         title = "Bet Sessions"
