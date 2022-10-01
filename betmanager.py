@@ -104,7 +104,7 @@ class betmanager:
     def StartBetSession(self, SessionID, RadiantSide, DireSide):
         self.CleanDatabaseSession(1)
         self.BetExists = True
-        embedTitle = 'Bet Session "' + str(SessionID)+'"'
+        embedTitle = 'Bet Session "' + str(SessionID) + '"'
         embed = discord.Embed(title=embedTitle, color=0xff00ae)
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/979033486340010015/1013430920935641148/871366.png")
@@ -192,7 +192,7 @@ class betmanager:
             return 0
         else:
             return result[0]
-            #return result[0][3], result[0][6], result[0][7]
+            # return result[0][3], result[0][6], result[0][7]
 
     def CountRadiantPoints(self, SessionID):
         executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(SessionID) + '" and Side="radiant"'
@@ -459,14 +459,17 @@ class betmanager:
 
     def GetOngoingBetSession(self):
         EachPageNumber = 6
-        title="Active Bets"
+        title = "Bet Sessions"
         print("Getting all Bet Session")
-        executeString = 'SELECT * FROM OngoingBetters'
+        executeString = 'SELECT * FROM SessionTable'
         result = self.CustomOpenDBOngoingBetters(executeString)
         embedList = []
         if len(result) == 0:
-            message = 'nothing to delete'
+            print("No Session")
+            embed = discord.Embed(title="No Active Bet Session", color=0xda0b0b)
+            return embed
         else:
+            print(" Session")
             for x in range(0, len(result), EachPageNumber):
                 print('x ' + str(x))
                 embed = discord.Embed(title=title, color=0xda0b0b)
@@ -475,9 +478,7 @@ class betmanager:
                         # print('y ' + str(y))
                         # print('xy ' + str(x + y))
                         print(result[x + y])
-                        message = '<@!' + str(result[x + y][1]) + '>:\n  ***' + str(
-                            result[x + y][2]) + '*** points, ' + str(result[x + y][3]) + 'W ' + str(
-                            result[x + y][4]) + 'L'
+                        message = 'Session "' + str(result[x + y][1]) + '" Status : ' + str(result[x + y][5])
                         embed.add_field(value=message, name='\u200b', inline=False)
                     except:
                         print('error')
@@ -486,5 +487,3 @@ class betmanager:
                 # print('loops: '+ embedlist[x]+' '+ embedlist[x+1]+ ' '+embedlist[x+2])
                 # print(embedlist[x])
             return embedList
-
-
