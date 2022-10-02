@@ -393,17 +393,27 @@ class betmanager:
             WinRatio = round(float(RadiantTotalPoints / DireTotalPoints), 2)
             executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
                 SessionID) + '" and Side="dire"'
+            loserString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
+                SessionID) + '" and Side="radiant"'
         else:
             WinRatio = (round(float(DireTotalPoints / RadiantTotalPoints), 2))
             executeString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
                 SessionID) + '" and Side="radiant"'
+            loserString = 'SELECT * FROM OngoingBetters WHERE SessionID ="' + str(
+                SessionID) + '" and Side="radiant"'
 
         Winners = self.CustomOpenDBOngoingBetters(executeString)
+        losers = self.CustomOpenDBOngoingBetters(loserString)
         print(Winners)
         for x in Winners:
             # Get Discord ID ,
             TotalWin = int(x[3]) + int(round(float(int(x[3]) * WinRatio), 0))
             self.dbObject.AddPoints(x[1], TotalWin)
+            self.dbObject.AddWins(x[1], 1)
+
+        for x in losers:
+            self.dbObject.AddLosses(x[1],1)
+
         EachPageNumber = 6
         embedList = []
         print('Preparing Who Won List')

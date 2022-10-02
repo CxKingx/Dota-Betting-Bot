@@ -536,9 +536,9 @@ async def startSession(ctx):
         await ctx.send('too long, try again')
         return
 
-    Title = str('Session Number ' + str(
-        Session_msg.content) + '\nRadiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
-    await ctx.send(Title)
+    # Title = str('Session Number ' + str(
+    #     Session_msg.content) + '\nRadiant Side = ' + Radiant_msg.content + '\nVS\nDire Side = ' + str(Dire_msg.content))
+    # await ctx.send(Title)
 
     for x in msg_list:
         await x.delete()
